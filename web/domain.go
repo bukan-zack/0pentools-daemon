@@ -13,6 +13,9 @@ type CreateDomainForm struct {
 	Cpu  uint `form:"cpu" binding:"required"`
 	Disk uint `form:"disk" binding:"required"`
 }
+type StartDomainForm struct {
+	Uuid string `form:"uuid" binding:"required"`
+}
 
 // TODO: improve error messages
 
@@ -55,7 +58,14 @@ func CreateDomain(ctx *gin.Context) {
 }
 
 func StartDomain(ctx *gin.Context) {
-	err := domain.Start(ctx.PostForm("uuid"))
+	form := StartDomainForm{}
+	if err := ctx.ShouldBind(&form); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid form body",
+		})
+		return
+	}
+	err := domain.Start(form.Uuid)
 	if err != nil {
 		if err.Error() == fmt.Sprintf(`Domain not found: no domain with matching name '%v'`, ctx.PostForm("uuid")) {
 			ctx.JSON(404, gin.H{
